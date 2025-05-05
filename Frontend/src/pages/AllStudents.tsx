@@ -164,7 +164,7 @@ const AllStudents = () => {
                                 </span>
                               </TableCell>
                               <TableCell className="hidden md:table-cell">{formatDate(student.membershipEnd)}</TableCell>
-                              <TableCell className="hidden md:table-cell">{formatDate(student.created_at)}</TableCell>
+                              <TableCell className="hidden md:table-cell">{formatDate(student.createdAt)}</TableCell>
                               <TableCell>
                                 <button
                                   onClick={() => handleViewDetails(student.id)}
