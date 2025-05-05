@@ -7,9 +7,9 @@ interface NewUserData {
 }
 
 const API_URL = window.cordova
-  ? 'https://easylibrary.onrender.com/api'
+  ? 'https://shivaaylibrary.onrender.com/api'
   : process.env.NODE_ENV === 'production'
-    ? 'https://easylibrary.onrender.com/api'
+    ? 'https://shivaaylibrary.onrender.com/api'
     : 'http://localhost:3000/api';
 const apiClient = axios.create({
   baseURL: API_URL,
