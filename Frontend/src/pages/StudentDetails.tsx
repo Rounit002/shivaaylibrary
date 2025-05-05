@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import api from '../services/api';
 import { toast } from 'sonner';
 import { Trash2, ArrowLeft, Edit, Printer } from 'lucide-react';
+import logo from '../components/shivaayFinal.png'; // Adjust the path as necessary
 
 interface Student {
   id: string;
@@ -97,7 +98,7 @@ const StudentDetails: React.FC = () => {
       document.body.innerHTML = `
         <html>
           <head>
-            <title>Student Details - SDM Boys Library</title>
+            <title>Student Details - Shivaay Library</title>
             <style>
               @media print {
                 body {
@@ -120,21 +121,15 @@ const StudentDetails: React.FC = () => {
                   position: relative;
                   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
                 }
-                .library-header .logo-circle {
+                .library-header .logo-img {
                   position: absolute;
                   left: 20px;
                   top: 50%;
                   transform: translateY(-50%);
-                  background: white;
-                  color: #ff4500;
                   width: 60px;
                   height: 60px;
+                  object-fit: cover;
                   border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 24px;
-                  font-weight: bold;
                 }
                 .library-header .library-name {
                   font-size: 28px;
@@ -325,10 +320,10 @@ const StudentDetails: React.FC = () => {
       </div>
       <div ref={printRef} className="hidden">
         <div className="library-header">
-          <div className="logo-circle">SDM</div>
-          <h1 className="library-name">SDM Boys Library</h1>
+          <img src={logo} alt="Shivaay Library Logo" className="logo-img" />
+          <h1 className="library-name">Shivaay Library</h1>
           <div className="identity-card">Identity Card</div>
-          <p className="contact">Mob.: 9798643123</p>
+          <p className="contact">Mob.: 7739854939</p>
         </div>
         <div className="student-details">
           {student.profileImageUrl && (
