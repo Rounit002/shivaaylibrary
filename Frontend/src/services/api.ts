@@ -215,6 +215,15 @@ const api = {
     }
   },
 
+  getSchedule: async (id: string) => {
+    try {
+      const response = await apiClient.get(`/schedules/${id}`);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
   getSchedulesWithStudents: async () => {
     try {
       const response = await apiClient.get('/schedules/with-students');
