@@ -84,15 +84,37 @@ const EditStudentForm: React.FC = () => {
   ];
 
   const handleSubmit = async () => {
-    if (!formData.phone.trim()) {
-      toast.error('Phone number is required');
-      return;
+    // Validate required fields (only name, membershipStart, and membershipEnd are required)
+    const requiredFields = [
+      { key: 'name', label: 'Name' },
+      { key: 'membershipStart', label: 'Membership Start' },
+      { key: 'membershipEnd', label: 'Membership End' },
+    ];
+
+    for (const field of requiredFields) {
+      const value = formData[field.key as keyof typeof formData];
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        toast.error(`${field.label} is required`);
+        return;
+      }
     }
+
+    // Validate email format only if email is provided
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+    }
+
     try {
       const response = await api.updateStudent(id!, {
         ...formData,
         seatId: formData.seatId,
         fee: formData.fee ? parseFloat(formData.fee) : null,
+        email: formData.email || null, // Allow email to be null
+        phone: formData.phone || null, // Allow phone to be null
       });
       toast.success('Student updated successfully');
       navigate('/students');
@@ -126,7 +148,7 @@ const EditStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
+            Email (Optional)
           </label>
           <input
             type="email"
@@ -134,13 +156,12 @@ const EditStudentForm: React.FC = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
           />
         </div>
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            Phone
+            Phone (Optional)
           </label>
           <input
             type="text"
@@ -148,7 +169,6 @@ const EditStudentForm: React.FC = () => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
           />
         </div>

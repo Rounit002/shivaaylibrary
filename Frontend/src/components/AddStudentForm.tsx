@@ -79,11 +79,9 @@ const AddStudentForm: React.FC = () => {
   ];
 
   const handleSubmit = async () => {
-    // Validate required fields
+    // Validate required fields (only name, membershipStart, and membershipEnd are required)
     const requiredFields = [
       { key: 'name', label: 'Name' },
-      { key: 'email', label: 'Email' },
-      { key: 'phone', label: 'Phone' },
       { key: 'membershipStart', label: 'Membership Start' },
       { key: 'membershipEnd', label: 'Membership End' },
     ];
@@ -96,11 +94,13 @@ const AddStudentForm: React.FC = () => {
       }
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error('Please enter a valid email address');
-      return;
+    // Validate email format only if email is provided
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
     }
 
     try {
@@ -120,6 +120,8 @@ const AddStudentForm: React.FC = () => {
         status: 'active',
         profileImageUrl: imageUrl,
         address: formData.address.trim() || null, // Convert empty string to null
+        email: formData.email || null, // Allow email to be null
+        phone: formData.phone || null, // Allow phone to be null
       };
 
       const response = await api.addStudent(studentData);
@@ -159,7 +161,6 @@ const AddStudentForm: React.FC = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
           />
         </div>
@@ -173,7 +174,6 @@ const AddStudentForm: React.FC = () => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
           />
         </div>

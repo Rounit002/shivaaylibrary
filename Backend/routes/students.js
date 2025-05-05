@@ -148,18 +148,23 @@ module.exports = (pool) => {
   router.post('/', checkAdminOrStaff, async (req, res) => {
     try {
       const { name, email, phone, address, membership_start, membership_end, shift_id, seat_id, fee, profile_image_url } = req.body;
-      if (!name || !email || !phone || !membership_start || !membership_end) {
-        return res.status(400).json({ message: 'Missing required fields' });
+      // Only name, membership_start, and membership_end are required
+      if (!name || !membership_start || !membership_end) {
+        return res.status(400).json({ message: 'Name, membership start, and membership end dates are required' });
       }
-      if (typeof phone !== 'string' || phone.trim() === '') {
-        return res.status(400).json({ message: 'Phone number must be a non-empty string' });
+      // Validate phone if provided
+      if (phone && (typeof phone !== 'string' || phone.trim() === '')) {
+        return res.status(400).json({ message: 'Phone number must be a non-empty string if provided' });
+      }
+      // Validate email uniqueness if provided
+      if (email) {
+        const emailCheck = await pool.query('SELECT * FROM students WHERE email = $1', [email]);
+        if (emailCheck.rows.length > 0) {
+          return res.status(400).json({ message: 'Email already in use' });
+        }
       }
       if (seat_id && !shift_id) {
         return res.status(400).json({ message: 'Shift must be selected when assigning a seat' });
-      }
-      const emailCheck = await pool.query('SELECT * FROM students WHERE email = $1', [email]);
-      if (emailCheck.rows.length > 0) {
-        return res.status(400).json({ message: 'Email already in use' });
       }
       if (shift_id) {
         const shiftCheck = await pool.query('SELECT * FROM schedules WHERE id = $1', [shift_id]);
@@ -175,7 +180,7 @@ module.exports = (pool) => {
       }
       const result = await pool.query(
         'INSERT INTO students (name, email, phone, address, membership_start, membership_end, shift_id, status, seat_id, fee, profile_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-        [name, email, phone, address || null, membership_start, membership_end, shift_id, 'active', seat_id || null, fee || null, profile_image_url || null]
+        [name, email || null, phone || null, address || null, membership_start, membership_end, shift_id, 'active', seat_id || null, fee || null, profile_image_url || null]
       );
       const newStudent = {
         ...result.rows[0],
