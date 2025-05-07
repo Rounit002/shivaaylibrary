@@ -10,6 +10,7 @@ import logo from '../components/shivaayFinal.png'; // Adjust the path as necessa
 interface Student {
   id: string;
   name: string;
+  admissionNo: string;
   email: string;
   phone?: string;
   address?: string;
@@ -52,6 +53,7 @@ const StudentDetails: React.FC = () => {
         setStudent({
           id: studentData.id,
           name: studentData.name,
+          admissionNo: studentData.admissionNo,
           email: studentData.email,
           phone: studentData.phone,
           address: studentData.address,
@@ -241,6 +243,10 @@ const StudentDetails: React.FC = () => {
                     </div>
                   )}
                   <div>
+                    <h2 className="text-sm font-medium text-gray-500">Admission No</h2>
+                    <p className="text-lg">{student.admissionNo || 'N/A'}</p>
+                  </div>
+                  <div>
                     <h2 className="text-sm font-medium text-gray-500">Name</h2>
                     <p className="text-lg">{student.name || 'Unknown'}</p>
                   </div>
@@ -330,6 +336,7 @@ const StudentDetails: React.FC = () => {
             <img src={student.profileImageUrl} alt={`${student.name}'s profile`} />
           )}
           <h2>Student Details</h2>
+          <p><strong>Admission No:</strong> <span>{student?.admissionNo || 'N/A'}</span></p>
           <p><strong>Name:</strong> <span>{student?.name || 'Unknown'}</span></p>
           <p><strong>Email:</strong> <span>{student?.email || 'Unknown'}</span></p>
           <p><strong>Phone:</strong> <span>{student?.phone || 'N/A'}</span></p>

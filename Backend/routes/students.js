@@ -147,7 +147,7 @@ module.exports = (pool) => {
 
   router.post('/', checkAdminOrStaff, async (req, res) => {
     try {
-      const { name, email, phone, address, membership_start, membership_end, shift_id, seat_id, fee, profile_image_url } = req.body;
+      const { name, admission_no, email, phone, address, membership_start, membership_end, shift_id, seat_id, fee, profile_image_url } = req.body;
       // Only name, membership_start, and membership_end are required
       if (!name || !membership_start || !membership_end) {
         return res.status(400).json({ message: 'Name, membership start, and membership end dates are required' });
@@ -179,8 +179,8 @@ module.exports = (pool) => {
         }
       }
       const result = await pool.query(
-        'INSERT INTO students (name, email, phone, address, membership_start, membership_end, shift_id, status, seat_id, fee, profile_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-        [name, email || null, phone || null, address || null, membership_start, membership_end, shift_id, 'active', seat_id || null, fee || null, profile_image_url || null]
+        'INSERT INTO students (name, admission_no, email, phone, address, membership_start, membership_end, shift_id, status, seat_id, fee, profile_image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+        [name, admission_no || null, email || null, phone || null, address || null, membership_start, membership_end, shift_id, 'active', seat_id || null, fee || null, profile_image_url || null]
       );
       const newStudent = {
         ...result.rows[0],
@@ -199,7 +199,7 @@ module.exports = (pool) => {
   router.put('/:id', checkAdminOrStaff, async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, phone, address, membership_start, membership_end, shift_id, seat_id, fee } = req.body;
+      const { name, admission_no, email, phone, address, membership_start, membership_end, shift_id, seat_id, fee } = req.body;
       if (seat_id && !shift_id) {
         return res.status(400).json({ message: 'Shift must be selected when assigning a seat' });
       }
@@ -227,16 +227,17 @@ module.exports = (pool) => {
       const result = await pool.query(
         `UPDATE students SET
           name = COALESCE($1, name),
-          email = COALESCE($2, email),
-          phone = COALESCE($3, phone),
-          address = COALESCE($4, address),
-          membership_start = COALESCE($5, membership_start),
-          membership_end = COALESCE($6, membership_end),
-          shift_id = $7,
-          seat_id = $8,
-          fee = $9
-        WHERE id = $10 RETURNING *`,
-        [name, email, phone, address, membership_start, membership_end, shift_id || null, seat_id || null, fee || null, id]
+          admission_no = COALESCE($2, admission_no),
+          email = COALESCE($3, email),
+          phone = COALESCE($4, phone),
+          address = COALESCE($5, address),
+          membership_start = COALESCE($6, membership_start),
+          membership_end = COALESCE($7, membership_end),
+          shift_id = $8,
+          seat_id = $9,
+          fee = $10
+        WHERE id = $11 RETURNING *`,
+        [name, admission_no, email, phone, address, membership_start, membership_end, shift_id || null, seat_id || null, fee || null, id]
       );
       if (result.rows.length === 0) {
         return res.status(404).json({ message: 'Student not found' });

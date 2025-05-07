@@ -9,6 +9,7 @@ const EditStudentForm: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
+    admissionNo: '',
     email: '',
     phone: '',
     membershipStart: '',
@@ -31,6 +32,7 @@ const EditStudentForm: React.FC = () => {
         ]);
         setFormData({
           name: studentResponse.name || '',
+          admissionNo: studentResponse.admissionNo || '',
           email: studentResponse.email || '',
           phone: studentResponse.phone || '',
           membershipStart: studentResponse.membershipStart || '',
@@ -113,8 +115,8 @@ const EditStudentForm: React.FC = () => {
         ...formData,
         seatId: formData.seatId,
         fee: formData.fee ? parseFloat(formData.fee) : null,
-        email: formData.email || null, // Allow email to be null
-        phone: formData.phone || null, // Allow phone to be null
+        email: formData.email || null,
+        phone: formData.phone || null,
       });
       toast.success('Student updated successfully');
       navigate('/students');
@@ -143,6 +145,19 @@ const EditStudentForm: React.FC = () => {
             value={formData.name}
             onChange={handleChange}
             required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+          />
+        </div>
+        <div>
+          <label htmlFor="admissionNo" className="block text-sm font-medium text-gray-700 mb-1">
+            Admission No
+          </label>
+          <input
+            type="text"
+            id="admissionNo"
+            name="admissionNo"
+            value={formData.admissionNo}
+            onChange={handleChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
           />
         </div>
