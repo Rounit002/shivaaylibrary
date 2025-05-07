@@ -97,6 +97,7 @@ module.exports = (pool) => {
       const student = {
         id: studentData.id,
         name: studentData.name,
+        admission_no: studentData.admission_no, // Added admission_no
         email: studentData.email,
         phone: studentData.phone,
         address: studentData.address,
