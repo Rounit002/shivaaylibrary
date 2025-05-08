@@ -18,6 +18,7 @@ import { format, addMonths } from 'date-fns';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import Select from 'react-select';
 
 // Type guard to check if user has permissions
 const hasPermissions = (user: any): user is { permissions: string[] } => {
@@ -31,21 +32,34 @@ const formatDate = (dateString: string | undefined): string => {
 };
 
 const ExpiredMemberships = () => {
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(addMonths(new Date(), 1));
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [seats, setSeats] = useState<any[]>([]);
+  const [formData, setFormData] = useState<{
+    shiftId: string | null;
+    seatId: string | null;
+    fee: string;
+  }>({
+    shiftId: null,
+    seatId: null,
+    fee: '',
+  });
+  const [loadingSeats, setLoadingSeats] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage, setStudentsPerPage] = useState(10);
   const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch students
         const response = await api.getStudents();
         const updatedStudents = response.students.map((student: any) => {
           const membershipEndDate = new Date(student.membershipEnd);
@@ -56,26 +70,65 @@ const ExpiredMemberships = () => {
             status: isExpired ? 'expired' : student.status,
           };
         });
-        const expiredStudents = updatedStudents.filter((student: any) => student.status === 'expired');
+        const expiredStudents = updatedStudents.filter(
+          (student: any) => student.status === 'expired'
+        );
         setStudents(expiredStudents);
+
+        // Fetch shifts (schedules)
+        const shiftsResponse = await api.getSchedules();
+        setShifts(shiftsResponse.schedules);
+
         setLoading(false);
       } catch (error: any) {
-        console.error('Failed to fetch expired students:', error.message);
+        console.error('Failed to fetch expired students or shifts:', error.message);
         setLoading(false);
       }
     };
 
-    fetchStudents();
+    fetchData();
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  useEffect(() => {
+    const fetchSeats = async () => {
+      if (formData.shiftId) {
+        setLoadingSeats(true);
+        try {
+          const seatsResponse = await api.getSeats(formData.shiftId);
+          const currentSeat = seatsResponse.seats.find(
+            (seat: any) => seat.id === formData.seatId
+          );
+          const availableSeats = seatsResponse.seats.filter(
+            (seat: any) => !seat.isAssigned || seat.id === formData.seatId
+          );
+          setSeats(availableSeats);
+        } catch (error) {
+          console.error('Failed to fetch seats:', error);
+          toast.error('Failed to load seats');
+        } finally {
+          setLoadingSeats(false);
+        }
+      } else {
+        setSeats([]);
+      }
+    };
+    fetchSeats();
+  }, [formData.shiftId, formData.seatId]);
+
   const handleRenewClick = (student: any) => {
     setSelectedStudent(student);
     setStartDate(new Date());
     setEndDate(addMonths(new Date(), 1));
+    // Pre-populate form data with student's existing details
+    setFormData({
+      shiftId: student.shiftId || null,
+      seatId: student.seatId || null,
+      fee: student.fee ? student.fee.toString() : '',
+    });
     setRenewDialogOpen(true);
   };
 
@@ -86,16 +139,44 @@ const ExpiredMemberships = () => {
     }
   };
 
+  const handleShiftChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const shiftId = e.target.value || null;
+    setFormData((prev) => ({
+      ...prev,
+      shiftId,
+      seatId: null, // Reset seat selection when shift changes
+    }));
+  };
+
+  const handleSeatChange = (selected: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      seatId: selected ? selected.value : null,
+    }));
+  };
+
+  const handleFeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      fee: e.target.value,
+    }));
+  };
+
   const handleRenewSubmit = async () => {
     if (selectedStudent && startDate && endDate) {
       try {
         await api.updateStudent(selectedStudent.id, {
-          membership_end: format(endDate, 'yyyy-MM-dd'),
+          membershipStart: format(startDate, 'yyyy-MM-dd'),
+          membershipEnd: format(endDate, 'yyyy-MM-dd'),
           status: 'active',
-          membership_start: format(startDate, 'yyyy-MM-dd'),
+          shiftId: formData.shiftId || null,
+          seatId: formData.seatId || null,
+          fee: formData.fee ? parseFloat(formData.fee) : null,
         });
         toast.success(`Membership renewed for ${selectedStudent.name}`);
         setRenewDialogOpen(false);
+
+        // Refresh the expired students list
         const response = await api.getStudents();
         const updatedStudents = response.students.map((student: any) => {
           const membershipEndDate = new Date(student.membershipEnd);
@@ -103,7 +184,9 @@ const ExpiredMemberships = () => {
           const isExpired = membershipEndDate < currentDate;
           return { ...student, status: isExpired ? 'expired' : student.status };
         });
-        const expiredStudents = updatedStudents.filter((student: any) => student.status === 'expired');
+        const expiredStudents = updatedStudents.filter(
+          (student: any) => student.status === 'expired'
+        );
         setStudents(expiredStudents);
       } catch (error: any) {
         console.error('Failed to renew membership:', error.response ? error.response.data : error.message);
@@ -140,6 +223,11 @@ const ExpiredMemberships = () => {
   const handleViewDetails = (id: string) => {
     navigate(`/students/${id}`);
   };
+
+  const seatOptions = [
+    { value: null, label: 'None' },
+    ...seats.map((seat: any) => ({ value: seat.id, label: seat.seatNumber })),
+  ];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -198,7 +286,7 @@ const ExpiredMemberships = () => {
                                 >
                                   <Eye size={18} />
                                 </button>
-                                { user?.role === 'admin' && (
+                                {user?.role === 'admin' && (
                                   <button
                                     onClick={() => handleRenewClick(student)}
                                     className="p-2 bg-gray-50 rounded-md text-purple-600 hover:text-purple-800"
@@ -206,7 +294,8 @@ const ExpiredMemberships = () => {
                                     Renew
                                   </button>
                                 )}
-                                { (user?.role === 'admin' || (hasPermissions(user) && user.permissions.includes('manage_students'))) && (
+                                {(user?.role === 'admin' ||
+                                  (hasPermissions(user) && user.permissions.includes('manage_students'))) && (
                                   <button
                                     onClick={() => handleDelete(student.id)}
                                     className="p-2 bg-gray-50 rounded-md text-red-600 hover:text-red-800"
@@ -248,7 +337,7 @@ const ExpiredMemberships = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
                       className="p-2 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
                     >
@@ -258,7 +347,7 @@ const ExpiredMemberships = () => {
                       Page {currentPage} of {totalPages}
                     </span>
                     <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
                       className="p-2 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
                     >
@@ -266,7 +355,8 @@ const ExpiredMemberships = () => {
                     </button>
                   </div>
                   <div className="text-sm text-gray-500">
-                    Showing {indexOfFirstStudent + 1} to {Math.min(indexOfLastStudent, filteredStudents.length)} of {filteredStudents.length} students
+                    Showing {indexOfFirstStudent + 1} to {Math.min(indexOfLastStudent, filteredStudents.length)} of{' '}
+                    {filteredStudents.length} students
                   </div>
                 </div>
               )}
@@ -300,9 +390,53 @@ const ExpiredMemberships = () => {
                 {endDate && format(endDate, 'yyyy-MM-dd')}
               </div>
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Shift</label>
+              <select
+                value={formData.shiftId || ''}
+                onChange={handleShiftChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              >
+                <option value="">-- Select Shift --</option>
+                {shifts.map((shift) => (
+                  <option key={shift.id} value={shift.id}>
+                    {shift.title} at {shift.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Seat</label>
+              {loadingSeats ? (
+                <div>Loading seats...</div>
+              ) : (
+                <Select
+                  id="seatId"
+                  name="seatId"
+                  options={seatOptions}
+                  value={seatOptions.find((option) => option.value === formData.seatId)}
+                  onChange={handleSeatChange}
+                  isSearchable
+                  placeholder="Select a seat or None"
+                  className="w-full"
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fee</label>
+              <input
+                type="number"
+                value={formData.fee}
+                onChange={handleFeeChange}
+                step="0.01"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRenewDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setRenewDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleRenewSubmit}>Renew Membership</Button>
           </DialogFooter>
         </DialogContent>

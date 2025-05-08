@@ -105,7 +105,7 @@ const ShiftList: React.FC = () => {
                         <TableRow key={shift.id}>
                           <TableCell className="font-medium">{shift.title}</TableCell>
                           <TableCell>{formatDate(shift.eventDate)}</TableCell>
-                          <TableCell>{formatTime(shift.time)}</TableCell>
+                          <TableCell>{(shift.description)}</TableCell>
                           <TableCell className="text-right">
                             <Link to={`/shifts/${shift.id}/students`} className="text-purple-600 hover:underline">
                               {shift.studentCount}
